@@ -2411,7 +2411,7 @@ namespace BPSR_ZDPS.Windows
                                         }
                                         else
                                         {
-                                            if (eventTracker.LoadEvents.IsOwnerDead)
+                                            if (eventTracker.LoadEvents.IsOwnerDead && ownerEntityData.MaxHp > 0)
                                             {
                                                 if (eventData.Cooldown != null)
                                                 {
