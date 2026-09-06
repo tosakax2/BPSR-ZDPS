@@ -194,6 +194,12 @@ namespace BPSR_ZDPS.Windows
             { Zproto.EAttrType.AttrDarkDefense.ToString(), new FAttrValueData(typeof(int)) },
             { Zproto.EAttrType.AttrDarkPower.ToString(), new FAttrValueData(typeof(int)) },
 
+            { Zproto.EAttrType.AttrWindAtk.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindDamage.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindDamageReduction.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindDefense.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindPower.ToString(), new FAttrValueData(typeof(int)) },
+
             { Zproto.EAttrType.AttrOriginEnergy.ToString(), new FAttrValueData(typeof(int)) },
             { Zproto.EAttrType.AttrMaxOriginEnergy.ToString(), new FAttrValueData(typeof(int)) },
 
