@@ -80,7 +80,7 @@ namespace BPSR_ZDPS.Windows
                             {
                                 if (!string.IsNullOrEmpty(parts[1]))
                                 {
-                                    AddRaidWarning(parts[1]);
+                                    AddRaidWarning(parts[1], Colors.OrangeRed);
                                 }
                             }
                         }
@@ -89,11 +89,11 @@ namespace BPSR_ZDPS.Windows
             }
         }
 
-        public static void AddRaidWarningMessage(string text, bool playSound, string customSoundPath = "")
+        public static void AddRaidWarningMessage(string text, bool playSound, Vector4 customMessageColor, string customSoundPath = "")
         {
             if (playSound)
             {
-                AddRaidWarning(text, true, customSoundPath);
+                AddRaidWarning(text, customMessageColor, true, customSoundPath);
             }
             else
             {
@@ -101,19 +101,25 @@ namespace BPSR_ZDPS.Windows
                 RaidWarningMessages.TryAdd(LastWarningId, new RaidWarningMessage()
                 {
                     WarningId = nextWarningId,
-                    MessageText = text
+                    MessageText = text,
+                    CustomMessageColor = customMessageColor
                 });
             }
         }
 
-        static void AddRaidWarning(string text, bool forceSound = false, string overrideSoundPath = "")
+        static void AddRaidWarning(string text, Vector4 customMessageColor, bool forceSound = false, string overrideSoundPath = "")
         {
-            ulong nextWarningId = LastWarningId++;
-            RaidWarningMessages.TryAdd(LastWarningId, new RaidWarningMessage()
+            if (text != "")
             {
-                WarningId = nextWarningId,
-                MessageText = text
-            });
+                ulong nextWarningId = LastWarningId++;
+                RaidWarningMessages.TryAdd(LastWarningId, new RaidWarningMessage()
+                {
+                    WarningId = nextWarningId,
+                    MessageText = text,
+                    CustomMessageColor = customMessageColor
+                });
+            }
+            
             if (Settings.Instance.WindowSettings.RaidManagerRaidWarning.PlayAlertSoundOnWarning || forceSound)
             {
                 Task.Run(() =>
@@ -235,8 +241,20 @@ namespace BPSR_ZDPS.Windows
                                 newOffset = 0.0f;
                             }
 
+                            bool useCustomColor = false;
+                            if (warning.Value.CustomMessageColor != Colors.OrangeRed)
+                            {
+                                useCustomColor = true;
+                                ImGui.PushStyleColor(ImGuiCol.Text, warning.Value.CustomMessageColor);
+                            }
+
                             ImGui.SetCursorPosX(newOffset);
                             ImGui.TextUnformatted(warning.Value.MessageText);
+
+                            if (useCustomColor)
+                            {
+                                ImGui.PopStyleColor();
+                            }
 
                             bool expireMessages = true;
 
@@ -433,7 +451,7 @@ namespace BPSR_ZDPS.Windows
 
                 if (ImGui.Button("Display Raid Warning Test Message"))
                 {
-                    AddRaidWarning($"This is a test Raid Warning message - {LastWarningId}.");
+                    AddRaidWarning($"This is a test Raid Warning message - {LastWarningId}.", Colors.OrangeRed);
                 }
 
                 if (ImGui.CollapsingHeader("Player Blacklist##PlayerBlacklistSection", ImGuiTreeNodeFlags.DefaultOpen))
@@ -653,6 +671,7 @@ namespace BPSR_ZDPS.Windows
         public ulong WarningId = 0;
         public DateTime TimeAdded = DateTime.Now;
         public DateTime TimeToRemove = DateTime.Now.AddSeconds(10);
+        public Vector4 CustomMessageColor = Colors.OrangeRed;
     }
 
     public class RaidManagerRaidWarningWindowSettings : WindowSettingsBase

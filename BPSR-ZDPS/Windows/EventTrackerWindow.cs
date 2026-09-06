@@ -1874,7 +1874,7 @@ namespace BPSR_ZDPS.Windows
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(raidWarningData.MessageFormat))
+            if (!string.IsNullOrEmpty(raidWarningData.MessageFormat) || raidWarningData.PlaySound)
             {
                 string msgText = raidWarningData.MessageFormat;
                 var matches = System.Text.RegularExpressions.Regex.Matches(raidWarningData.MessageFormat, @"\{([^}]+)\}");//@"\{(\w+)\}");
@@ -1999,7 +1999,7 @@ namespace BPSR_ZDPS.Windows
                     }
                 }
 
-                Windows.RaidManagerRaidWarningWindow.AddRaidWarningMessage(msgText, raidWarningData.PlaySound, raidWarningData.CustomSoundPath);
+                Windows.RaidManagerRaidWarningWindow.AddRaidWarningMessage(msgText, raidWarningData.PlaySound, raidWarningData.CustomMessageColor, raidWarningData.CustomSoundPath);
                 return true;
             }
 
@@ -6448,6 +6448,12 @@ namespace BPSR_ZDPS.Windows
                     "Example paths may look like: 'Custom\\NewAlert.wav' or '..\\CustomAudio\\Sounds\\NewAlert2.mp3'");
                 ImGui.Unindent();
                 ImGui.EndDisabled();
+
+                ImGui.TextUnformatted("Custom Message Color: ");
+                ImGui.Indent();
+                ImGui.ColorEdit4($"##RaidWarningMessageColorPicker_{raidWarningIdx}", ref raidWarningData.CustomMessageColor);
+                ImGui.Unindent();
+
                 ImGui.Separator();
 
                 ImGui.EndDisabled();
@@ -7972,6 +7978,7 @@ namespace BPSR_ZDPS.Windows
         public string MessageFormat = "";
         public bool PlaySound = false;
         public string CustomSoundPath = "";
+        public Vector4 CustomMessageColor = Colors.OrangeRed;
 
         public object Clone()
         {
