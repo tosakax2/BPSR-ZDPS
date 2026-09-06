@@ -4406,6 +4406,42 @@ namespace BPSR_ZDPS.Windows
                     }
                     ImGui.SetItemTooltip("Adds the Internal Preset Trackers and Containers back to the Preset Lists\nNote: This may cause duplicate entries. Internal Presets will be put at the top of the list.");
 
+                    if (ImGui.MenuItem("Optimize Event Tracker Database"))
+                    {
+                        System.Diagnostics.Debug.WriteLine("Starting Event Tracker Database Optimization...");
+                        ActiveTrackedEventEntryIdx = -1;
+                        ActiveTrackerContainer = null;
+                        ActiveTrackedEventEntry = null;
+                        PersistentContainerCount = 0;
+                        PersistentTrackerCount = 0;
+                        Dictionary<uint, TrackerContainer> optimizedEventContainers = new();
+                        Dictionary<uint, Vector2> optimizedContainerPositions = new();
+
+                        foreach (var container in EventTrackerContainers)
+                        {
+                            PersistentContainerCount++;
+
+                            if (windowSettings.ContainerPositions.TryGetValue(container.Key, out var currentContainerPos))
+                            {
+                                optimizedContainerPositions.Add(PersistentContainerCount, currentContainerPos);
+                            }
+
+                            optimizedEventContainers.Add(PersistentContainerCount, (TrackerContainer)container.Value.Clone(PersistentContainerCount, ref PersistentTrackerCount));
+                        }
+                        EventTrackerContainers.Clear();
+                        foreach (var container in optimizedEventContainers)
+                        {
+                            EventTrackerContainers.Add(container.Key, container.Value);
+                        }
+                        windowSettings.ContainerPositions.Clear();
+                        foreach (var containerPos in optimizedContainerPositions)
+                        {
+                            windowSettings.ContainerPositions.Add(containerPos.Key, containerPos.Value);
+                        }
+                        System.Diagnostics.Debug.WriteLine("Optimized Event Tracker Database!");
+                    }
+                    ImGui.SetItemTooltip("Rebuilds the internal id system for Containers and Trackers to reclaim unused ids and improve performance.\nDO NOT have Active Containers when using this otherwise you may risk crashing.");
+
                     ImGui.Separator();
 
                     ImGui.Checkbox("Show Debug Log", ref ShowDebugLogWindow);
