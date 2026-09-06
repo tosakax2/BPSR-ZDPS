@@ -410,9 +410,11 @@ namespace BPSR_ZDPS.Windows
                     foreach (var eventContainer in EventTrackerContainers)
                     {
                         eventContainer.Value.RecheckTrackerStates();
+
                         if (eventContainer.Value.IdTracker > PersistentContainerCount)
                         {
                             PersistentContainerCount = eventContainer.Value.IdTracker;
+                        }
 
                             foreach (var eventTracker in eventContainer.Value.EventTrackers)
                             {
@@ -424,7 +426,6 @@ namespace BPSR_ZDPS.Windows
                         }
                     }
                 }
-            }
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Error trying to load Containers from save data file.");
