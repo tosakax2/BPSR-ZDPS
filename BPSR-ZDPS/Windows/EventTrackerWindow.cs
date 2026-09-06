@@ -607,7 +607,11 @@ namespace BPSR_ZDPS.Windows
             }
             else if (eventTracker.TrackedEntityType == ETrackedEntityType.Party)
             {
-                if (AppState.PlayerUUID != entityUuid && AppState.PlayerUUID != 0 && AppState.PartyTeamId != 0 && EncounterManager.Current != null)
+                if (eventTracker.ExcludeSelfFromEveryoneType && entityUuid == AppState.PlayerUUID)
+                {
+                    shouldHandle = false;
+                }
+                else if (AppState.PlayerUUID != entityUuid && AppState.PlayerUUID != 0 && AppState.PartyTeamId != 0 && EncounterManager.Current != null)
                 {
                     if (Utils.UuidToEntityType(entityUuid) == (long)EEntityType.EntChar)
                     {
@@ -6476,10 +6480,10 @@ namespace BPSR_ZDPS.Windows
                 }
                 ActiveTrackedEventEntry.DefinedEntityTargetUuid = definedUuid;
             }
-            if (ActiveTrackedEventEntry.TrackedEntityType == ETrackedEntityType.Everyone)
+            if (ActiveTrackedEventEntry.TrackedEntityType == ETrackedEntityType.Everyone || ActiveTrackedEventEntry.TrackedEntityType == ETrackedEntityType.Party)
             {
                 ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted("Exclude 'Self' From 'Everyone' Filter:");
+                ImGui.TextUnformatted("Exclude 'Self' From 'Everyone' and 'Party' Filter:");
                 ImGui.SameLine();
                 ImGui.Checkbox("##ExcludeSelfFromEveryoneType", ref ActiveTrackedEventEntry.ExcludeSelfFromEveryoneType);
             }
