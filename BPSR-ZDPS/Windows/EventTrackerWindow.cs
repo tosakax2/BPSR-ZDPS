@@ -3428,6 +3428,7 @@ namespace BPSR_ZDPS.Windows
         {
             ImGuiP.PushOverrideID(ImGuiP.ImHashStr("DeleteContainerModalPrompt"));
             ImGui.SetNextWindowPos(ImGui.GetCenter(ImGui.GetWindowViewport()), ImGuiCond.Appearing, new Vector2(0.5f,0.5f));
+            ImGui.PushStyleColor(ImGuiCol.TitleBgActive, Colors.DarkRed);
             if (ImGui.BeginPopupModal("Delete Container?###DeleteContainerModal", ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.TextUnformatted($"The selected Container ('{ActiveTrackerContainer.ContainerName}') has {ActiveTrackerContainer.EventTrackers.Count} Tracker(s) in it.");
@@ -3446,8 +3447,10 @@ namespace BPSR_ZDPS.Windows
                 {
                     ImGui.CloseCurrentPopup();
                 }
+                ImGui.SetItemDefaultFocus();
                 ImGui.EndPopup();
             }
+            ImGui.PopStyleColor();
             ImGui.PopID();
         }
 
@@ -3468,6 +3471,66 @@ namespace BPSR_ZDPS.Windows
 
             ActiveTrackedEventEntry = null;
             ActiveTrackedEventEntryIdx = -1;
+        }
+
+        private static void DrawTrackerDeletePrompt()
+        {
+            ImGuiP.PushOverrideID(ImGuiP.ImHashStr("DeleteTrackerModalPrompt"));
+            ImGui.SetNextWindowPos(ImGui.GetCenter(ImGui.GetWindowViewport()), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.TitleBgActive, Colors.DarkRed);
+            if (ImGui.BeginPopupModal("Delete Tracker?###DeleteTrackerModal", ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                ImGui.TextUnformatted("Are you sure you want to delete the selected Tracker?");
+                ImGui.NewLine();
+                ImGui.Separator();
+                if (ImGui.Button("Yes", new Vector2(140, 0)))
+                {
+                    DeleteActiveTracker();
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SameLine();
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 140);
+                if (ImGui.Button("No", new Vector2(140, 0)))
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SetItemDefaultFocus();
+                ImGui.EndPopup();
+            }
+            ImGui.PopStyleColor();
+            ImGui.PopID();
+        }
+
+        private static void OpenTrackerDeletePrompt()
+        {
+            ImGuiP.PushOverrideID(ImGuiP.ImHashStr("DeleteTrackerModalPrompt"));
+            ImGui.OpenPopup("###DeleteTrackerModal");
+            ImGui.PopID();
+        }
+
+        private static void DeleteActiveTracker()
+        {
+            if (ActiveTrackedEventEntryIdx > 0)
+            {
+                ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
+                ActiveTrackedEventEntryIdx = ActiveTrackedEventEntryIdx - 1;
+                ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
+            }
+            else if (ActiveTrackedEventEntryIdx == 0)
+            {
+                ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
+                if (ActiveTrackerContainer.EventTrackers.Count > 0)
+                {
+                    ActiveTrackedEventEntryIdx = 0;
+                    ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
+                }
+                else
+                {
+                    ActiveTrackedEventEntryIdx = -1;
+                    ActiveTrackedEventEntry = null;
+        }
+            }
+            ActiveTrackerContainer.RecheckTrackerStates();
         }
 
         private static void DrawPresetManagerWindow()
@@ -4162,7 +4225,7 @@ namespace BPSR_ZDPS.Windows
                                 ImGui.EndDragDropTarget();
                             }
                             ImGui.PopStyleColor();
-                            ImGui.SetItemTooltip($"Trackers: {container.Value.EventTrackers.Count}");
+                            ImGui.SetItemTooltip($"Trackers: {container.Value.EventTrackers.Count}\nContainerId: {container.Value.IdTracker}");
                             if (ImGui.BeginPopupContextItem())
                             {
                                 if (ImGui.MenuItem("Copy Container To Clipboard"))
@@ -4956,33 +5019,22 @@ namespace BPSR_ZDPS.Windows
                 ImGui.SetItemTooltip("Container already has a Tracker in it.\nChange the Style to List to support more than one Tracker at a time or make a new Container.");
             }
             ImGui.SameLine();
+            DrawTrackerDeletePrompt();
             ImGui.BeginDisabled(ActiveTrackedEventEntry == null || ActiveTrackedEventEntryIdx == -1);
             ImGui.PushStyleColor(ImGuiCol.Button, Colors.DarkRed_Transparent);
             if (ImGui.Button(AppStrings.GetLocalized("EventTracker_DeleteSelectedTracker")))
             {
-                if (ActiveTrackedEventEntryIdx > 0)
+                if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
                 {
-                    ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
-                    ActiveTrackedEventEntryIdx = ActiveTrackedEventEntryIdx - 1;
-                    ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
-                }
-                else if (ActiveTrackedEventEntryIdx == 0)
-                {
-                    ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
-                    if (ActiveTrackerContainer.EventTrackers.Count > 0)
-                    {
-                        ActiveTrackedEventEntryIdx = 0;
-                        ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
+                    DeleteActiveTracker();
                     }
                     else
                     {
-                        ActiveTrackedEventEntryIdx = -1;
-                        ActiveTrackedEventEntry = null;
-                    }
+                    OpenTrackerDeletePrompt();
                 }
-                ActiveTrackerContainer.RecheckTrackerStates();
             }
             ImGui.PopStyleColor();
+            ImGui.SetItemTooltip("Hold CTRL to delete without confirmation prompt.");
             ImGui.EndDisabled();
 
             if (!IsPresetManagerInContainerMode)
