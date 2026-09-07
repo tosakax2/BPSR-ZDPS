@@ -1,8 +1,8 @@
 {
     "9901":
     {
-        "Name": "Shield Knight Reality X4 (Illusion Boost)",
-        "Desc": "Illusion Energy threshold reached, increasing Illusion stats",
+        "Name": "Reality Illusion Boost",
+        "Desc": "Illusion Energy threshold reached, increasing Illusion stats from Reality Factor",
         "BuffType": 1
     },
     "9903":
@@ -1156,6 +1156,11 @@
         "Desc": "Boss is in Area D (Room 4)",
         "BuffType": 1
     },
+    "829139":
+    {
+        "Name": "Dim Screen",
+        "Desc": "The player screen is darkened for the duration"
+    },
     "829201":
     {
         "Name": "Delayed Railgun",
@@ -1286,6 +1291,21 @@
     {
         "Name": "Final Symphony (Locked)",
         "Desc": "Player is locked in place and unable to take actions for the duration"
+    },
+    "829323":
+    {
+        "Name": "Divine Decree - Cumulative Sentence",
+        "Desc": "Player is marked with a large tankbuster, exploding at end of duration"
+    },
+    "829325":
+    {
+        "Name": "Trial of Bonds",
+        "Desc": "Player is marked with a flare AOE that is placed when the duration ends.\nIt explodes shortly after placing"
+    },
+    "829326":
+    {
+        "Name": "Divine Decree - Cumulative Sentence (Phantom)",
+        "Desc": "Player is marked with a large phantom tankbuster, exploding at end of duration"
     },
     "840007":
     {
