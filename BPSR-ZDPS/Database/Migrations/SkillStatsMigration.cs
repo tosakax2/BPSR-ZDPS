@@ -82,6 +82,7 @@ namespace BPSR_ZDPS.Database.Migrations
                                     combatStats.SetSkillType(skillType);
                                     combatStats.AddData(0,
                                         skillStat.Key,
+                                        skillStat.Value.HitEventId,
                                         skillStat.Value.Level,
                                         snapshot.Value,
                                         snapshot.IsCrit,

@@ -1256,10 +1256,21 @@ namespace BPSR_ZDPS
                                 //System.Diagnostics.Debug.WriteLine($"({buffEffect.Type}) buffEffect[{buffIdx}].logicEffect[{logicIdx}] (Type:{logicEffect.EffectType}) = (BuffUUID:{buffEffect.BuffUuid}){changeInfo}");
                                 EncounterManager.Current.NotifyBuffEvent(targetUuid, buffEffect.Type, buffEffect.BuffUuid, 0, 0, 0, changeInfo.Layer, (int)changeInfo.Duration, 0, creationTime, extraData);
                             }
+                            else if (logicEffect.EffectType == EBuffEffectLogicPbType.BuffEffectEnergyDisplay)
+                            {
+                                var energyDisplay = BuffEnergyDisplayInfo.Parser.ParseFrom(reader);
+                                //System.Diagnostics.Debug.WriteLine($"{targetUuid} has BuffEffectEnergyDisplay EffectId={energyDisplay.EffectId} {buffEffect}");
+                                EncounterManager.Current.NotifyBuffEvent(targetUuid, buffEffect.Type, buffEffect.BuffUuid, 0, 0, 0, 0, 0, 0, null, extraData);
+                            }
                             else if (logicEffect.EffectType == null)
                             {
                                 //System.Diagnostics.Debug.WriteLine($"Unhandled Logic Effect {buffEffect}");
                                 EncounterManager.Current.NotifyBuffEvent(targetUuid, buffEffect.Type, buffEffect.BuffUuid, 0, 0, 0, 0, 0, 0, null, extraData);
+                            }
+                            else
+                            {
+                                //System.Diagnostics.Debug.WriteLine($"{targetUuid} has Unhandled Buff Logic Effect RawData.Len={logicEffect.RawData.Length} {buffEffect}");
+                                //EncounterManager.Current.NotifyBuffEvent(targetUuid, buffEffect.Type, buffEffect.BuffUuid, 0, 0, 0, 0, 0, 0, null, extraData);
                             }
                         }
                     }
@@ -1464,16 +1475,16 @@ namespace BPSR_ZDPS
 
                 if (isHeal)
                 {
-                    EncounterManager.Current.AddHealing((isAttackerPlayer ? attackerUuid : 0), targetUuid, skillId, syncDamageInfo.OwnerLevel, damage, hpLessen, shieldBreak, syncDamageInfo.Property, syncDamageInfo.Type, syncDamageInfo.DamageMode, isCrit, isLucky, isCauseLucky, isMiss, isDead, syncDamageInfo.DamagePos, extraData);
+                    EncounterManager.Current.AddHealing((isAttackerPlayer ? attackerUuid : 0), targetUuid, skillId, syncDamageInfo.HitEventId, syncDamageInfo.OwnerLevel, damage, hpLessen, shieldBreak, syncDamageInfo.Property, syncDamageInfo.Type, syncDamageInfo.DamageMode, isCrit, isLucky, isCauseLucky, isMiss, isDead, syncDamageInfo.DamagePos, extraData);
                 }
                 else
                 {
                     if (attackerUuid != targetUuid)
                     {
-                        EncounterManager.Current.AddDamage(attackerUuid, targetUuid, skillId, syncDamageInfo.OwnerLevel, damage, hpLessen, shieldBreak, syncDamageInfo.Property, syncDamageInfo.Type, syncDamageInfo.DamageMode, isCrit, isLucky, isCauseLucky, isMiss, isDead, syncDamageInfo.DamagePos, extraData);
+                        EncounterManager.Current.AddDamage(attackerUuid, targetUuid, skillId, syncDamageInfo.HitEventId, syncDamageInfo.OwnerLevel, damage, hpLessen, shieldBreak, syncDamageInfo.Property, syncDamageInfo.Type, syncDamageInfo.DamageMode, isCrit, isLucky, isCauseLucky, isMiss, isDead, syncDamageInfo.DamagePos, extraData);
                     }
 
-                    EncounterManager.Current.AddTakenDamage(attackerUuid, targetUuid, skillId, syncDamageInfo.OwnerLevel, damage, hpLessen, shieldBreak, syncDamageInfo.Property, syncDamageInfo.Type, syncDamageInfo.DamageMode, isCrit, isLucky, isCauseLucky, isMiss, isDead, syncDamageInfo.DamagePos, extraData);
+                    EncounterManager.Current.AddTakenDamage(attackerUuid, targetUuid, skillId, syncDamageInfo.HitEventId, syncDamageInfo.OwnerLevel, damage, hpLessen, shieldBreak, syncDamageInfo.Property, syncDamageInfo.Type, syncDamageInfo.DamageMode, isCrit, isLucky, isCauseLucky, isMiss, isDead, syncDamageInfo.DamagePos, extraData);
                 }
 
                 buffBasedShieldBreakValue = 0;

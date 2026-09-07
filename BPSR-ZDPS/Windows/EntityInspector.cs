@@ -828,6 +828,10 @@ namespace BPSR_ZDPS.Windows
                                 {
                                     ImGui.TableNextRow();
                                     ImGui.TableNextColumn(); // ID Column
+                                    if (snapshot.HitEventId > 0)
+                                    {
+                                        ImGui.TextUnformatted($"Evt: {snapshot.HitEventId}");
+                                    }
 
                                     ImGui.TableNextColumn(); // Name Column
                                     if (snapshot.IsKill)
