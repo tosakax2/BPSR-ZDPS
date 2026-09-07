@@ -700,10 +700,13 @@ namespace BPSR_ZDPS.Windows
                                 newTracker.Name = matched.Name;
                                 newTracker.Desc = matched.Desc;
                                 string matchedIconName = matched.GetIconName();
-                                string resolvedIconName = Path.Combine("Buffs", matchedIconName);
-                                if (newTracker.IconPath != resolvedIconName)
+                                if (!string.IsNullOrEmpty(matchedIconName))
                                 {
-                                    newTracker.UpdateIconData(matchedIconName, true);
+                                    string resolvedIconName = Path.Combine("Buffs", matchedIconName);
+                                    if (newTracker.IconPath != resolvedIconName)
+                                    {
+                                        newTracker.UpdateIconData(matchedIconName, true);
+                                    }
                                 }
                             }
                             else
@@ -790,10 +793,13 @@ namespace BPSR_ZDPS.Windows
                                     }
 
                                     string matchedIconName = matched.GetIconName();
-                                    string resolvedIconName = Path.Combine("Buffs", matchedIconName);
-                                    if (eventTracker.IconPath != resolvedIconName)
+                                    if (!string.IsNullOrEmpty(matchedIconName))
                                     {
-                                        eventTracker.UpdateIconData(matchedIconName, true);
+                                        string resolvedIconName = Path.Combine("Buffs", matchedIconName);
+                                        if (eventTracker.IconPath != resolvedIconName)
+                                        {
+                                            eventTracker.UpdateIconData(matchedIconName, true);
+                                        }
                                     }
 
                                     if (!string.IsNullOrEmpty(matched.Desc) && eventTracker.Desc != matched.Desc)
@@ -1029,15 +1035,18 @@ namespace BPSR_ZDPS.Windows
                                 newTracker.Desc = matched.Desc;
 
                                 string matchedIconName = matched.GetIconName();
-                                string baseDir = "Skills";
-                                if (matched.IsRoleSlot())
+                                if (!string.IsNullOrEmpty(matchedIconName))
                                 {
-                                    baseDir = "Skills_Imagines";
-                                }
-                                string resolvedIconName = Path.Combine(baseDir, matchedIconName);
-                                if (newTracker.IconPath != resolvedIconName)
-                                {
-                                    newTracker.UpdateIconData(matchedIconName, true);
+                                    string baseDir = "Skills";
+                                    if (matched.IsRoleSlot())
+                                    {
+                                        baseDir = "Skills_Imagines";
+                                    }
+                                    string resolvedIconName = Path.Combine(baseDir, matchedIconName);
+                                    if (newTracker.IconPath != resolvedIconName)
+                                    {
+                                        newTracker.UpdateIconData(matchedIconName, true);
+                                    }
                                 }
                             }
                             else
@@ -1691,15 +1700,18 @@ namespace BPSR_ZDPS.Windows
                                 }
 
                                 string matchedIconName = matched.GetIconName();
-                                string baseDir = "Skills";
-                                if (matched.IsRoleSlot())
+                                if (!string.IsNullOrEmpty(matchedIconName))
                                 {
-                                    baseDir = "Skills_Imagines";
-                                }
-                                string resolvedIconName = Path.Combine(baseDir, matchedIconName);
-                                if (eventTracker.IconPath != resolvedIconName)
-                                {
-                                    eventTracker.UpdateIconData(matchedIconName, true);
+                                    string baseDir = "Skills";
+                                    if (matched.IsRoleSlot())
+                                    {
+                                        baseDir = "Skills_Imagines";
+                                    }
+                                    string resolvedIconName = Path.Combine(baseDir, matchedIconName);
+                                    if (eventTracker.IconPath != resolvedIconName)
+                                    {
+                                        eventTracker.UpdateIconData(matchedIconName, true);
+                                    }
                                 }
 
                                 if (!string.IsNullOrEmpty(matched.Desc) && eventTracker.Desc != matched.Desc)
@@ -1772,15 +1784,18 @@ namespace BPSR_ZDPS.Windows
                                 }
 
                                 string matchedIconName = matched.GetIconName();
-                                string baseDir = "Skills";
-                                if (matched.IsRoleSlot())
+                                if (!string.IsNullOrEmpty(matchedIconName))
                                 {
-                                    baseDir = "Skills_Imagines";
-                                }
-                                string resolvedIconName = Path.Combine(baseDir, matchedIconName);
-                                if (eventTracker.IconPath != resolvedIconName)
-                                {
-                                    eventTracker.UpdateIconData(matchedIconName, true);
+                                    string baseDir = "Skills";
+                                    if (matched.IsRoleSlot())
+                                    {
+                                        baseDir = "Skills_Imagines";
+                                    }
+                                    string resolvedIconName = Path.Combine(baseDir, matchedIconName);
+                                    if (eventTracker.IconPath != resolvedIconName)
+                                    {
+                                        eventTracker.UpdateIconData(matchedIconName, true);
+                                    }
                                 }
 
                                 if (!string.IsNullOrEmpty(matched.Desc) && eventTracker.Desc != matched.Desc)
@@ -1886,15 +1901,18 @@ namespace BPSR_ZDPS.Windows
                                 }
 
                                 string matchedIconName = matched.GetIconName();
-                                string baseDir = "Skills";
-                                if (matched.IsRoleSlot())
+                                if (!string.IsNullOrEmpty(matchedIconName))
                                 {
-                                    baseDir = "Skills_Imagines";
-                                }
-                                string resolvedIconName = Path.Combine(baseDir, matchedIconName);
-                                if (eventTracker.IconPath != resolvedIconName)
-                                {
-                                    eventTracker.UpdateIconData(matchedIconName, true);
+                                    string baseDir = "Skills";
+                                    if (matched.IsRoleSlot())
+                                    {
+                                        baseDir = "Skills_Imagines";
+                                    }
+                                    string resolvedIconName = Path.Combine(baseDir, matchedIconName);
+                                    if (eventTracker.IconPath != resolvedIconName)
+                                    {
+                                        eventTracker.UpdateIconData(matchedIconName, true);
+                                    }
                                 }
 
                                 if (!string.IsNullOrEmpty(matched.Desc) && eventTracker.Desc != matched.Desc)
@@ -1904,6 +1922,11 @@ namespace BPSR_ZDPS.Windows
                             }
 
                             eventData.Layers += 1;
+
+                            if (eventTracker.OverrideDuration)
+                            {
+                                eventData.Cooldown = new(eventTracker.DurationOverrideValue, 0, 0);
+                            }
 
                             if (eventData.Cooldown == null)
                             {
@@ -2542,6 +2565,12 @@ namespace BPSR_ZDPS.Windows
                                 {
                                     if (hasDisplayedTrackerData)
                                     {
+                                        // Still update the Tracker's cooldown state even if it won't be shown
+                                        if (eventData.Cooldown != null)
+                                        {
+                                            eventData.Cooldown.IsFinished();
+                                        }
+
                                         // We already have an instance of this tracker rendered
                                         continue;
                                     }
