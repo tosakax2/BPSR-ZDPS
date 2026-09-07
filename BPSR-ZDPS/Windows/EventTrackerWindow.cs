@@ -416,16 +416,16 @@ namespace BPSR_ZDPS.Windows
                             PersistentContainerCount = eventContainer.Value.IdTracker;
                         }
 
-                            foreach (var eventTracker in eventContainer.Value.EventTrackers)
+                        foreach (var eventTracker in eventContainer.Value.EventTrackers)
+                        {
+                            if (eventTracker.Value.IdTracker > PersistentTrackerCount)
                             {
-                                if (eventTracker.Value.IdTracker > PersistentTrackerCount)
-                                {
-                                    PersistentTrackerCount = eventTracker.Value.IdTracker;
-                                }
+                                PersistentTrackerCount = eventTracker.Value.IdTracker;
                             }
                         }
                     }
                 }
+            }
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Error trying to load Containers from save data file.");
@@ -551,6 +551,8 @@ namespace BPSR_ZDPS.Windows
             EncounterManager.Current.AttributeUpdated += Encounter_AttributeUpdated;
             EncounterManager.Current.SceneEvent -= Encounter_SceneEvent;
             EncounterManager.Current.SceneEvent += Encounter_SceneEvent;
+            EncounterManager.Current.DamageEvent -= Encounter_DamageEvent;
+            EncounterManager.Current.DamageEvent += Encounter_DamageEvent;
         }
 
         public static void AddDebugLog(string log)
@@ -936,7 +938,7 @@ namespace BPSR_ZDPS.Windows
 
                                     if (rw != null)
                                     {
-                                        didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, null);
+                                        didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, eventData.SourceEntityUuid > 0 ? eventData.SourceEntityUuid : null);
                                     }
 
                                     eventData.Cooldown?.EndCooldown();
@@ -1824,6 +1826,106 @@ namespace BPSR_ZDPS.Windows
                             if (rw != null)
                             {
                                 bool didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, null);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void Encounter_DamageEvent(object sender, DamageEventArgs e)
+        {
+            foreach (var eventContainer in EventTrackerContainers)
+            {
+                if (!eventContainer.Value.IsContainerEnabled)
+                {
+                    continue;
+                }
+
+                foreach (var eventTrackerKVP in eventContainer.Value.EventTrackers)
+                {
+                    var eventTracker = eventTrackerKVP.Value;
+
+                    if (eventTracker.TrackerType != ETrackerType.Skills)
+                    {
+                        continue;
+                    }
+
+                    bool shouldHandle = CheckIfShouldHandleEvent(eventTracker, e.AttackerUuid);
+
+                    if (shouldHandle)
+                    {
+                        if (!eventTracker.SkillEvents.Contains(ESkillEventTrackingType.DamageEvent))
+                        {
+                            continue;
+                        }
+
+                        if (e.SkillId == eventTracker.TrackedSkillId && (eventTracker.OverrideTrackedId ? e.HitEventId == eventTracker.OverrideTrackedIdValue : true))
+                        {
+                            eventTracker.EventData.TryGetValue(e.TargetUuid, out var eventData);
+
+                            if (eventData == null)
+                            {
+                                //eventData = new SkillEventData();
+                                eventData = new EventData();
+                                eventTracker.EventData.TryAdd(e.TargetUuid, eventData);
+                            }
+
+                            //SkillEventData skillEventData = eventData as SkillEventData;
+
+                            eventData.IsHidden = false;
+
+                            eventData.OwnerEntityUuid = e.TargetUuid;
+                            eventData.SourceEntityUuid = e.AttackerUuid;
+
+                            if (HelperMethods.DataTables.Skills.Data.TryGetValue(eventTracker.TrackedSkillId.ToString(), out var matched))
+                            {
+                                if (string.IsNullOrEmpty(eventTracker.Name) || eventTracker.Name != matched.Name)
+                                {
+                                    eventTracker.Name = matched.Name;
+                                }
+
+                                string matchedIconName = matched.GetIconName();
+                                string baseDir = "Skills";
+                                if (matched.IsRoleSlot())
+                                {
+                                    baseDir = "Skills_Imagines";
+                                }
+                                string resolvedIconName = Path.Combine(baseDir, matchedIconName);
+                                if (eventTracker.IconPath != resolvedIconName)
+                                {
+                                    eventTracker.UpdateIconData(matchedIconName, true);
+                                }
+
+                                if (!string.IsNullOrEmpty(matched.Desc) && eventTracker.Desc != matched.Desc)
+                                {
+                                    eventTracker.Desc = matched.Desc;
+                                }
+                            }
+
+                            eventData.Layers += 1;
+
+                            if (eventData.Cooldown == null)
+                            {
+                                eventData.Cooldown = new(0, 0, 0);
+                            }
+
+                            if (eventTracker.DebugLogTracker)
+                            {
+                                DebugEventTrackerLog.Enqueue($"{DateTime.Now} Damage Event ({e.SkillId}) AttackerUUID={e.AttackerUuid} TargetUUID={e.TargetUuid} HitEventId={e.HitEventId} IsKillingBlow={e.IsKillingBlow}");
+                            }
+
+                            // TODO: Currently we're reusing the BuffType to turn this bar red
+                            // This should however use a Skill-specific variable to handle hostility assignment
+                            eventData.BuffType = DataTypes.Enum.EBuffType.Debuff;
+
+                            eventData.Cooldown.StartOrUpdate(DateTime.UtcNow);
+
+                            var rw = GetEnabledRaidWarning(eventTracker, ERaidWarningActivationType.OnGain);
+
+                            if (rw != null)
+                            {
+                                bool didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, eventData.SourceEntityUuid);
                             }
                         }
                     }
@@ -3528,7 +3630,7 @@ namespace BPSR_ZDPS.Windows
                 {
                     ActiveTrackedEventEntryIdx = -1;
                     ActiveTrackedEventEntry = null;
-        }
+                }
             }
             ActiveTrackerContainer.RecheckTrackerStates();
         }
@@ -5027,9 +5129,9 @@ namespace BPSR_ZDPS.Windows
                 if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
                 {
                     DeleteActiveTracker();
-                    }
-                    else
-                    {
+                }
+                else
+                {
                     OpenTrackerDeletePrompt();
                 }
             }
@@ -5556,6 +5658,9 @@ namespace BPSR_ZDPS.Windows
                         case ESkillEventTrackingType.NoticeTip:
                             ImGui.SetItemTooltip("This occurs when a message appears on your screen informing about how to perform a fight mechanic.");
                             break;
+                        case ESkillEventTrackingType.DamageEvent:
+                            ImGui.SetItemTooltip("This occurs when a an entity takes damage from any source. Supports Hit Event Id (via 'Override Tracked Id') for filtering beyond just Skill Id.");
+                            break;
                         default:
                             break;
                     }
@@ -5632,7 +5737,7 @@ namespace BPSR_ZDPS.Windows
             ImGui.SetItemTooltip("Uses the Cooldown Duration reported in the Boss Skill Warning table.");
 
             ImGui.Checkbox("Override Tracked Id", ref ActiveTrackedEventEntry.OverrideTrackedId);
-            ImGui.SetItemTooltip("This is primarily useful for changing the ID used with Notice Tip Events.");
+            ImGui.SetItemTooltip("This is primarily useful for changing the ID used with Notice Tip Events.\nThis is also used for Damage Events to specify the Hit Event Id. This can be found in the Entity Inspector when viewing all Skill Instances.");
             if (ActiveTrackedEventEntry.OverrideTrackedId)
             {
                 ImGui.Indent();
@@ -7712,7 +7817,8 @@ namespace BPSR_ZDPS.Windows
     {
         SkillCast = 0,
         BossWarning = 1,
-        NoticeTip = 2
+        NoticeTip = 2,
+        DamageEvent = 3,
     }
 
     public enum EDurationProgressBarStyle
