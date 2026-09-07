@@ -199,7 +199,16 @@ namespace BPSR_ZDPS.Meters
                         //ImGui.GetWindowDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), ImGui.ColorConvertFloat4ToU32(groupBackground), 5);
                         //renderSplitter.Merge(drawList);
 
-                        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Professions.ProfessionColors(professionId));
+                        bool isDead = entity.Hp == 0 && entity.MaxHp > 0;
+                        if (isDead)
+                        {
+                            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Professions.ProfessionColors(professionId) * new Vector4(0.65f, 0.65f, 0.65f, 0.60f));
+                        }
+                        else
+                        {
+                            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Professions.ProfessionColors(professionId));
+                        }
+                        
                         ImGui.ProgressBar((float)contributionProgressBar / 100.0f, new Vector2(-1, 0), $"##DpsEntryContribution_{i}");
                         ImGui.PopStyleColor();
 
@@ -258,7 +267,7 @@ namespace BPSR_ZDPS.Meters
                             }
 
                             ImGui.SetCursorPos(startPoint);
-                            if (SelectableWithHintImageImagines($" {(i + 1).ToString().PadLeft((entityList.Count() < 101 ? 2 : 3), '0')}.", $"{nameFormat}##DpsEntry_{i}", dps_format, entity.ProfessionId, imagines))
+                            if (SelectableWithHintImageImagines($" {(i + 1).ToString().PadLeft((entityList.Count() < 101 ? 2 : 3), '0')}.", $"{nameFormat}##DpsEntry_{i}", dps_format, entity.ProfessionId, imagines, isDead))
                             {
                                 mainWindow.entityInspector = new EntityInspector();
                                 mainWindow.entityInspector.LoadEntity(entity, activeEncounter.StartTime, activeEncounter.ExData.FirstDamageTimeStamp);
@@ -268,7 +277,7 @@ namespace BPSR_ZDPS.Meters
                         else
                         {
                             ImGui.SetCursorPos(startPoint);
-                            if (SelectableWithHintImage($" {(i + 1).ToString().PadLeft((entityList.Count() < 101 ? 2 : 3), '0')}.", $"{nameFormat}##DpsEntry_{i}", dps_format, entity.ProfessionId))
+                            if (SelectableWithHintImage($" {(i + 1).ToString().PadLeft((entityList.Count() < 101 ? 2 : 3), '0')}.", $"{nameFormat}##DpsEntry_{i}", dps_format, entity.ProfessionId, isDead))
                             //if (SelectableWithHint($" {(i + 1).ToString().PadLeft((playerList.Count() < 101 ? 2 : 3), '0')}. {name}-{profession} ({entity.AbilityScore})##DpsEntry_{i}", dps_format))
                             //if (ImGui.Selectable($"{name}-{profession} ({entity.AbilityScore}) [{entity.UID.ToString()}] ({entity.TotalDamage})##DpsEntry_{i}"))
                             {

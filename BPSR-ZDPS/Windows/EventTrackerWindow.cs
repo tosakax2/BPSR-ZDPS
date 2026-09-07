@@ -194,6 +194,12 @@ namespace BPSR_ZDPS.Windows
             { Zproto.EAttrType.AttrDarkDefense.ToString(), new FAttrValueData(typeof(int)) },
             { Zproto.EAttrType.AttrDarkPower.ToString(), new FAttrValueData(typeof(int)) },
 
+            { Zproto.EAttrType.AttrWindAtk.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindDamage.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindDamageReduction.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindDefense.ToString(), new FAttrValueData(typeof(int)) },
+            { Zproto.EAttrType.AttrWindPower.ToString(), new FAttrValueData(typeof(int)) },
+
             { Zproto.EAttrType.AttrOriginEnergy.ToString(), new FAttrValueData(typeof(int)) },
             { Zproto.EAttrType.AttrMaxOriginEnergy.ToString(), new FAttrValueData(typeof(int)) },
 
@@ -404,16 +410,17 @@ namespace BPSR_ZDPS.Windows
                     foreach (var eventContainer in EventTrackerContainers)
                     {
                         eventContainer.Value.RecheckTrackerStates();
+
                         if (eventContainer.Value.IdTracker > PersistentContainerCount)
                         {
                             PersistentContainerCount = eventContainer.Value.IdTracker;
+                        }
 
-                            foreach (var eventTracker in eventContainer.Value.EventTrackers)
+                        foreach (var eventTracker in eventContainer.Value.EventTrackers)
+                        {
+                            if (eventTracker.Value.IdTracker > PersistentTrackerCount)
                             {
-                                if (eventTracker.Value.IdTracker > PersistentTrackerCount)
-                                {
-                                    PersistentTrackerCount = eventTracker.Value.IdTracker;
-                                }
+                                PersistentTrackerCount = eventTracker.Value.IdTracker;
                             }
                         }
                     }
@@ -544,6 +551,8 @@ namespace BPSR_ZDPS.Windows
             EncounterManager.Current.AttributeUpdated += Encounter_AttributeUpdated;
             EncounterManager.Current.SceneEvent -= Encounter_SceneEvent;
             EncounterManager.Current.SceneEvent += Encounter_SceneEvent;
+            EncounterManager.Current.DamageEvent -= Encounter_DamageEvent;
+            EncounterManager.Current.DamageEvent += Encounter_DamageEvent;
         }
 
         public static void AddDebugLog(string log)
@@ -600,7 +609,11 @@ namespace BPSR_ZDPS.Windows
             }
             else if (eventTracker.TrackedEntityType == ETrackedEntityType.Party)
             {
-                if (AppState.PlayerUUID != entityUuid && AppState.PlayerUUID != 0 && AppState.PartyTeamId != 0 && EncounterManager.Current != null)
+                if (eventTracker.ExcludeSelfFromEveryoneType && entityUuid == AppState.PlayerUUID)
+                {
+                    shouldHandle = false;
+                }
+                else if (AppState.PlayerUUID != entityUuid && AppState.PlayerUUID != 0 && AppState.PartyTeamId != 0 && EncounterManager.Current != null)
                 {
                     if (Utils.UuidToEntityType(entityUuid) == (long)EEntityType.EntChar)
                     {
@@ -925,7 +938,7 @@ namespace BPSR_ZDPS.Windows
 
                                     if (rw != null)
                                     {
-                                        didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, null);
+                                        didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, eventData.SourceEntityUuid > 0 ? eventData.SourceEntityUuid : null);
                                     }
 
                                     eventData.Cooldown?.EndCooldown();
@@ -1820,6 +1833,106 @@ namespace BPSR_ZDPS.Windows
             }
         }
 
+        private static void Encounter_DamageEvent(object sender, DamageEventArgs e)
+        {
+            foreach (var eventContainer in EventTrackerContainers)
+            {
+                if (!eventContainer.Value.IsContainerEnabled)
+                {
+                    continue;
+                }
+
+                foreach (var eventTrackerKVP in eventContainer.Value.EventTrackers)
+                {
+                    var eventTracker = eventTrackerKVP.Value;
+
+                    if (eventTracker.TrackerType != ETrackerType.Skills)
+                    {
+                        continue;
+                    }
+
+                    bool shouldHandle = CheckIfShouldHandleEvent(eventTracker, e.AttackerUuid);
+
+                    if (shouldHandle)
+                    {
+                        if (!eventTracker.SkillEvents.Contains(ESkillEventTrackingType.DamageEvent))
+                        {
+                            continue;
+                        }
+
+                        if (e.SkillId == eventTracker.TrackedSkillId && (eventTracker.OverrideTrackedId ? e.HitEventId == eventTracker.OverrideTrackedIdValue : true))
+                        {
+                            eventTracker.EventData.TryGetValue(e.TargetUuid, out var eventData);
+
+                            if (eventData == null)
+                            {
+                                //eventData = new SkillEventData();
+                                eventData = new EventData();
+                                eventTracker.EventData.TryAdd(e.TargetUuid, eventData);
+                            }
+
+                            //SkillEventData skillEventData = eventData as SkillEventData;
+
+                            eventData.IsHidden = false;
+
+                            eventData.OwnerEntityUuid = e.TargetUuid;
+                            eventData.SourceEntityUuid = e.AttackerUuid;
+
+                            if (HelperMethods.DataTables.Skills.Data.TryGetValue(eventTracker.TrackedSkillId.ToString(), out var matched))
+                            {
+                                if (string.IsNullOrEmpty(eventTracker.Name) || eventTracker.Name != matched.Name)
+                                {
+                                    eventTracker.Name = matched.Name;
+                                }
+
+                                string matchedIconName = matched.GetIconName();
+                                string baseDir = "Skills";
+                                if (matched.IsRoleSlot())
+                                {
+                                    baseDir = "Skills_Imagines";
+                                }
+                                string resolvedIconName = Path.Combine(baseDir, matchedIconName);
+                                if (eventTracker.IconPath != resolvedIconName)
+                                {
+                                    eventTracker.UpdateIconData(matchedIconName, true);
+                                }
+
+                                if (!string.IsNullOrEmpty(matched.Desc) && eventTracker.Desc != matched.Desc)
+                                {
+                                    eventTracker.Desc = matched.Desc;
+                                }
+                            }
+
+                            eventData.Layers += 1;
+
+                            if (eventData.Cooldown == null)
+                            {
+                                eventData.Cooldown = new(0, 0, 0);
+                            }
+
+                            if (eventTracker.DebugLogTracker)
+                            {
+                                DebugEventTrackerLog.Enqueue($"{DateTime.Now} Damage Event ({e.SkillId}) AttackerUUID={e.AttackerUuid} TargetUUID={e.TargetUuid} HitEventId={e.HitEventId} IsKillingBlow={e.IsKillingBlow}");
+                            }
+
+                            // TODO: Currently we're reusing the BuffType to turn this bar red
+                            // This should however use a Skill-specific variable to handle hostility assignment
+                            eventData.BuffType = DataTypes.Enum.EBuffType.Debuff;
+
+                            eventData.Cooldown.StartOrUpdate(DateTime.UtcNow);
+
+                            var rw = GetEnabledRaidWarning(eventTracker, ERaidWarningActivationType.OnGain);
+
+                            if (rw != null)
+                            {
+                                bool didRaidWarning = HandleRaidWarnings(rw, eventTracker, eventData, eventData.OwnerEntityUuid, eventData.SourceEntityUuid);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private static RaidWarningTrackerData? GetEnabledRaidWarning(TrackedEventEntry eventTracker, ERaidWarningActivationType activationType)
         {
             return eventTracker.RaidWarningTrackerDatas.Where(x => x.ActivationType == activationType && x.IsEnabled).FirstOrDefault();
@@ -1863,7 +1976,7 @@ namespace BPSR_ZDPS.Windows
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(raidWarningData.MessageFormat))
+            if (!string.IsNullOrEmpty(raidWarningData.MessageFormat) || raidWarningData.PlaySound)
             {
                 string msgText = raidWarningData.MessageFormat;
                 var matches = System.Text.RegularExpressions.Regex.Matches(raidWarningData.MessageFormat, @"\{([^}]+)\}");//@"\{(\w+)\}");
@@ -1988,7 +2101,7 @@ namespace BPSR_ZDPS.Windows
                     }
                 }
 
-                Windows.RaidManagerRaidWarningWindow.AddRaidWarningMessage(msgText, raidWarningData.PlaySound, raidWarningData.CustomSoundPath);
+                Windows.RaidManagerRaidWarningWindow.AddRaidWarningMessage(msgText, raidWarningData.PlaySound, raidWarningData.CustomMessageColor, raidWarningData.CustomSoundPath);
                 return true;
             }
 
@@ -2404,7 +2517,7 @@ namespace BPSR_ZDPS.Windows
                                         }
                                         else
                                         {
-                                            if (eventTracker.LoadEvents.IsOwnerDead)
+                                            if (eventTracker.LoadEvents.IsOwnerDead && ownerEntityData.MaxHp > 0)
                                             {
                                                 if (eventData.Cooldown != null)
                                                 {
@@ -3417,6 +3530,7 @@ namespace BPSR_ZDPS.Windows
         {
             ImGuiP.PushOverrideID(ImGuiP.ImHashStr("DeleteContainerModalPrompt"));
             ImGui.SetNextWindowPos(ImGui.GetCenter(ImGui.GetWindowViewport()), ImGuiCond.Appearing, new Vector2(0.5f,0.5f));
+            ImGui.PushStyleColor(ImGuiCol.TitleBgActive, Colors.DarkRed);
             if (ImGui.BeginPopupModal("Delete Container?###DeleteContainerModal", ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.TextUnformatted($"The selected Container ('{ActiveTrackerContainer.ContainerName}') has {ActiveTrackerContainer.EventTrackers.Count} Tracker(s) in it.");
@@ -3435,8 +3549,10 @@ namespace BPSR_ZDPS.Windows
                 {
                     ImGui.CloseCurrentPopup();
                 }
+                ImGui.SetItemDefaultFocus();
                 ImGui.EndPopup();
             }
+            ImGui.PopStyleColor();
             ImGui.PopID();
         }
 
@@ -3457,6 +3573,66 @@ namespace BPSR_ZDPS.Windows
 
             ActiveTrackedEventEntry = null;
             ActiveTrackedEventEntryIdx = -1;
+        }
+
+        private static void DrawTrackerDeletePrompt()
+        {
+            ImGuiP.PushOverrideID(ImGuiP.ImHashStr("DeleteTrackerModalPrompt"));
+            ImGui.SetNextWindowPos(ImGui.GetCenter(ImGui.GetWindowViewport()), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGui.PushStyleColor(ImGuiCol.TitleBgActive, Colors.DarkRed);
+            if (ImGui.BeginPopupModal("Delete Tracker?###DeleteTrackerModal", ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                ImGui.TextUnformatted("Are you sure you want to delete the selected Tracker?");
+                ImGui.NewLine();
+                ImGui.Separator();
+                if (ImGui.Button("Yes", new Vector2(140, 0)))
+                {
+                    DeleteActiveTracker();
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SameLine();
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 140);
+                if (ImGui.Button("No", new Vector2(140, 0)))
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SetItemDefaultFocus();
+                ImGui.EndPopup();
+            }
+            ImGui.PopStyleColor();
+            ImGui.PopID();
+        }
+
+        private static void OpenTrackerDeletePrompt()
+        {
+            ImGuiP.PushOverrideID(ImGuiP.ImHashStr("DeleteTrackerModalPrompt"));
+            ImGui.OpenPopup("###DeleteTrackerModal");
+            ImGui.PopID();
+        }
+
+        private static void DeleteActiveTracker()
+        {
+            if (ActiveTrackedEventEntryIdx > 0)
+            {
+                ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
+                ActiveTrackedEventEntryIdx = ActiveTrackedEventEntryIdx - 1;
+                ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
+            }
+            else if (ActiveTrackedEventEntryIdx == 0)
+            {
+                ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
+                if (ActiveTrackerContainer.EventTrackers.Count > 0)
+                {
+                    ActiveTrackedEventEntryIdx = 0;
+                    ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
+                }
+                else
+                {
+                    ActiveTrackedEventEntryIdx = -1;
+                    ActiveTrackedEventEntry = null;
+                }
+            }
+            ActiveTrackerContainer.RecheckTrackerStates();
         }
 
         private static void DrawPresetManagerWindow()
@@ -4151,7 +4327,7 @@ namespace BPSR_ZDPS.Windows
                                 ImGui.EndDragDropTarget();
                             }
                             ImGui.PopStyleColor();
-                            ImGui.SetItemTooltip($"Trackers: {container.Value.EventTrackers.Count}");
+                            ImGui.SetItemTooltip($"Trackers: {container.Value.EventTrackers.Count}\nContainerId: {container.Value.IdTracker}");
                             if (ImGui.BeginPopupContextItem())
                             {
                                 if (ImGui.MenuItem("Copy Container To Clipboard"))
@@ -4398,6 +4574,42 @@ namespace BPSR_ZDPS.Windows
                         LoadDefaultPresets(true);
                     }
                     ImGui.SetItemTooltip("Adds the Internal Preset Trackers and Containers back to the Preset Lists\nNote: This may cause duplicate entries. Internal Presets will be put at the top of the list.");
+
+                    if (ImGui.MenuItem("Optimize Event Tracker Database"))
+                    {
+                        System.Diagnostics.Debug.WriteLine("Starting Event Tracker Database Optimization...");
+                        ActiveTrackedEventEntryIdx = -1;
+                        ActiveTrackerContainer = null;
+                        ActiveTrackedEventEntry = null;
+                        PersistentContainerCount = 0;
+                        PersistentTrackerCount = 0;
+                        Dictionary<uint, TrackerContainer> optimizedEventContainers = new();
+                        Dictionary<uint, Vector2> optimizedContainerPositions = new();
+
+                        foreach (var container in EventTrackerContainers)
+                        {
+                            PersistentContainerCount++;
+
+                            if (windowSettings.ContainerPositions.TryGetValue(container.Key, out var currentContainerPos))
+                            {
+                                optimizedContainerPositions.Add(PersistentContainerCount, currentContainerPos);
+                            }
+
+                            optimizedEventContainers.Add(PersistentContainerCount, (TrackerContainer)container.Value.Clone(PersistentContainerCount, ref PersistentTrackerCount));
+                        }
+                        EventTrackerContainers.Clear();
+                        foreach (var container in optimizedEventContainers)
+                        {
+                            EventTrackerContainers.Add(container.Key, container.Value);
+                        }
+                        windowSettings.ContainerPositions.Clear();
+                        foreach (var containerPos in optimizedContainerPositions)
+                        {
+                            windowSettings.ContainerPositions.Add(containerPos.Key, containerPos.Value);
+                        }
+                        System.Diagnostics.Debug.WriteLine("Optimized Event Tracker Database!");
+                    }
+                    ImGui.SetItemTooltip("Rebuilds the internal id system for Containers and Trackers to reclaim unused ids and improve performance.\nDO NOT have Active Containers when using this otherwise you may risk crashing.");
 
                     ImGui.Separator();
 
@@ -4909,33 +5121,22 @@ namespace BPSR_ZDPS.Windows
                 ImGui.SetItemTooltip("Container already has a Tracker in it.\nChange the Style to List to support more than one Tracker at a time or make a new Container.");
             }
             ImGui.SameLine();
+            DrawTrackerDeletePrompt();
             ImGui.BeginDisabled(ActiveTrackedEventEntry == null || ActiveTrackedEventEntryIdx == -1);
             ImGui.PushStyleColor(ImGuiCol.Button, Colors.DarkRed_Transparent);
             if (ImGui.Button(AppStrings.GetLocalized("EventTracker_DeleteSelectedTracker")))
             {
-                if (ActiveTrackedEventEntryIdx > 0)
+                if (ImGui.IsKeyDown(ImGuiKey.ModCtrl))
                 {
-                    ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
-                    ActiveTrackedEventEntryIdx = ActiveTrackedEventEntryIdx - 1;
-                    ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
+                    DeleteActiveTracker();
                 }
-                else if (ActiveTrackedEventEntryIdx == 0)
+                else
                 {
-                    ActiveTrackerContainer.EventTrackers.Remove(ActiveTrackedEventEntry.IdTracker);
-                    if (ActiveTrackerContainer.EventTrackers.Count > 0)
-                    {
-                        ActiveTrackedEventEntryIdx = 0;
-                        ActiveTrackedEventEntry = ActiveTrackerContainer.EventTrackers.ElementAt(ActiveTrackedEventEntryIdx).Value;
-                    }
-                    else
-                    {
-                        ActiveTrackedEventEntryIdx = -1;
-                        ActiveTrackedEventEntry = null;
-                    }
+                    OpenTrackerDeletePrompt();
                 }
-                ActiveTrackerContainer.RecheckTrackerStates();
             }
             ImGui.PopStyleColor();
+            ImGui.SetItemTooltip("Hold CTRL to delete without confirmation prompt.");
             ImGui.EndDisabled();
 
             if (!IsPresetManagerInContainerMode)
@@ -5457,6 +5658,9 @@ namespace BPSR_ZDPS.Windows
                         case ESkillEventTrackingType.NoticeTip:
                             ImGui.SetItemTooltip("This occurs when a message appears on your screen informing about how to perform a fight mechanic.");
                             break;
+                        case ESkillEventTrackingType.DamageEvent:
+                            ImGui.SetItemTooltip("This occurs when a an entity takes damage from any source. Supports Hit Event Id (via 'Override Tracked Id') for filtering beyond just Skill Id.");
+                            break;
                         default:
                             break;
                     }
@@ -5533,7 +5737,7 @@ namespace BPSR_ZDPS.Windows
             ImGui.SetItemTooltip("Uses the Cooldown Duration reported in the Boss Skill Warning table.");
 
             ImGui.Checkbox("Override Tracked Id", ref ActiveTrackedEventEntry.OverrideTrackedId);
-            ImGui.SetItemTooltip("This is primarily useful for changing the ID used with Notice Tip Events.");
+            ImGui.SetItemTooltip("This is primarily useful for changing the ID used with Notice Tip Events.\nThis is also used for Damage Events to specify the Hit Event Id. This can be found in the Entity Inspector when viewing all Skill Instances.");
             if (ActiveTrackedEventEntry.OverrideTrackedId)
             {
                 ImGui.Indent();
@@ -6349,6 +6553,12 @@ namespace BPSR_ZDPS.Windows
                     "Example paths may look like: 'Custom\\NewAlert.wav' or '..\\CustomAudio\\Sounds\\NewAlert2.mp3'");
                 ImGui.Unindent();
                 ImGui.EndDisabled();
+
+                ImGui.TextUnformatted("Custom Message Color: ");
+                ImGui.Indent();
+                ImGui.ColorEdit4($"##RaidWarningMessageColorPicker_{raidWarningIdx}", ref raidWarningData.CustomMessageColor);
+                ImGui.Unindent();
+
                 ImGui.Separator();
 
                 ImGui.EndDisabled();
@@ -6433,10 +6643,10 @@ namespace BPSR_ZDPS.Windows
                 }
                 ActiveTrackedEventEntry.DefinedEntityTargetUuid = definedUuid;
             }
-            if (ActiveTrackedEventEntry.TrackedEntityType == ETrackedEntityType.Everyone)
+            if (ActiveTrackedEventEntry.TrackedEntityType == ETrackedEntityType.Everyone || ActiveTrackedEventEntry.TrackedEntityType == ETrackedEntityType.Party)
             {
                 ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted("Exclude 'Self' From 'Everyone' Filter:");
+                ImGui.TextUnformatted("Exclude 'Self' From 'Everyone' and 'Party' Filter:");
                 ImGui.SameLine();
                 ImGui.Checkbox("##ExcludeSelfFromEveryoneType", ref ActiveTrackedEventEntry.ExcludeSelfFromEveryoneType);
             }
@@ -7607,7 +7817,8 @@ namespace BPSR_ZDPS.Windows
     {
         SkillCast = 0,
         BossWarning = 1,
-        NoticeTip = 2
+        NoticeTip = 2,
+        DamageEvent = 3,
     }
 
     public enum EDurationProgressBarStyle
@@ -7873,6 +8084,7 @@ namespace BPSR_ZDPS.Windows
         public string MessageFormat = "";
         public bool PlaySound = false;
         public string CustomSoundPath = "";
+        public Vector4 CustomMessageColor = Colors.OrangeRed;
 
         public object Clone()
         {

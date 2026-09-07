@@ -3072,6 +3072,16 @@
         "Name": "Divine Scale - Causality Warp",
         "Desc": "Paradox-Calamity Remnant - Final"
     },
+    "829323":
+    {
+        "Name": "Divine Decree - Cumulative Sentence",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "829326":
+    {
+        "Name": "Divine Decree - Cumulative Sentence (Phantom)",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
     "833018":
     {
         "Name": "Nappo Bomb Self Destruct"
@@ -6020,6 +6030,16 @@
         "Name": "Water Beam",
         "Desc": "Abyssal Nappo"
     },
+    "3340219":
+    {
+        "Name": "Torrent Duet (Ice Wave)",
+        "Desc": "Abyssal Nappo"
+    },
+    "3340220":
+    {
+        "Name": "Torrent Duet (Water Wave)",
+        "Desc": "Abyssal Nappo"
+    },
     "3340225":
     {
         "Name": "Destroy Speaker",
@@ -6043,6 +6063,16 @@
     "3340236":
     {
         "Name": "Super Dance - Purple Quad Cleave",
+        "Desc": "Abyssal Nappo"
+    },
+    "3340237":
+    {
+        "Name": "Sonic Orb (Orange)",
+        "Desc": "Abyssal Nappo"
+    },
+    "3340238":
+    {
+        "Name": "Sonic Orb (Purple)",
         "Desc": "Abyssal Nappo"
     },
     "3340239":
@@ -6288,6 +6318,16 @@
     {
         "Name": "Pursuit Cluster Bomb",
         "Desc": "Tripod Heavy Oculopod"
+    },
+    "3391011":
+    {
+        "Name": "Patrol Canceled AOE",
+        "Desc": "Patrol Oculopod"
+    },
+    "3391013":
+    {
+        "Name": "Oculopod Self Destruct",
+        "Desc": "Patrol Oculopod"
     },
     "3390105":
     {
@@ -6961,6 +7001,11 @@
         "Name": "Micro Rockets (Spread AOE)",
         "Desc": "Paradox-Calamity Remnant - Origin"
     },
+    "10320001":
+    {
+        "Name": "Illusion - Obliteration Railgun",
+        "Desc": "Paradox-Calamity Remnant - Continuation"
+    },
     "10320005":
     {
         "Name": "Disintegration Shockwave",
@@ -7046,6 +7091,36 @@
         "Name": "Half Room Beam - Right",
         "Desc": "Paradox-Calamity Remnant - Final"
     },
+    "10330009":
+    {
+        "Name": "Preset Return",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "10330010":
+    {
+        "Name": "Causality Warp",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "10330011":
+    {
+        "Name": "Final Symphony",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "10330012":
+    {
+        "Name": "Divine Banishment",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "10330013":
+    {
+        "Name": "Cumulative Sentence",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "10330014":
+    {
+        "Name": "Trial of Bonds (Cast)",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
     "10330051":
     {
         "Name": "Divine Scale - Causality Warp (Cast)",
@@ -7059,6 +7134,11 @@
     "10330055":
     {
         "Name": "Divine Banishment - Electric AOE",
+        "Desc": "Paradox-Calamity Remnant - Final"
+    },
+    "10330057":
+    {
+        "Name": "Trial of Bonds",
         "Desc": "Paradox-Calamity Remnant - Final"
     },
     "10330101":

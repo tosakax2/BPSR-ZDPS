@@ -16,7 +16,7 @@ namespace BPSR_ZDPS.Meters
 
         public virtual void Draw(MainWindow mainWindow) { }
 
-        public static bool SelectableWithHintImage(string number, string name, string value, int profession)
+        public static bool SelectableWithHintImage(string number, string name, string value, int profession, bool isDead = false)
         {
             var startPoint = ImGui.GetCursorPos();
 
@@ -36,7 +36,15 @@ namespace BPSR_ZDPS.Meters
             ImGui.SetCursorPosX(offset);
 
             ImGui.PushStyleColor(ImGuiCol.NavCursor, Colors.Transparent);
+            if (isDead)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, Colors.LightRed);
+            }
             bool ret = ImGui.Selectable(name, false, ImGuiSelectableFlags.SpanAllColumns);
+            if (isDead)
+            {
+                ImGui.PopStyleColor();
+            }
             ImGui.PopStyleColor();
             ImGui.SameLine();
 
@@ -74,7 +82,7 @@ namespace BPSR_ZDPS.Meters
             return ret;
         }
 
-        public static bool SelectableWithHintImageImagines(string number, string name, string value, int profession, List<MeterImagine> imagines)
+        public static bool SelectableWithHintImageImagines(string number, string name, string value, int profession, List<MeterImagine> imagines, bool isDead = false)
         {
             var startPoint = ImGui.GetCursorPos();
 
@@ -100,7 +108,15 @@ namespace BPSR_ZDPS.Meters
 
             ImGui.SetCursorPosX(offset);
 
+            if (isDead)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, Colors.LightRed);
+            }
             bool ret = ImGui.Selectable(name, false, ImGuiSelectableFlags.SpanAllColumns);
+            if (isDead)
+            {
+                ImGui.PopStyleColor();
+            }
             ImGui.SameLine();
 
             ImGui.SetCursorPos(startPoint);

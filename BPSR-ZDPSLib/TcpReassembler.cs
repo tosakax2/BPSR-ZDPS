@@ -270,7 +270,7 @@ public class TcpReassembler
         {
             var toRemove = Packets.Where(x => x.Value.SequenceNumber < LastSeq ||
                                 x.Value.PayloadData.Length == 0 ||
-                                (DateTime.Now - x.Value.ArriveTime).TotalSeconds >= 10).ToList();
+                                (DateTime.Now - x.Value.ArriveTime).TotalSeconds >= 20).ToList();
 
             if (toRemove.Count() > 0)
                 Log.Information($"{EndPoint} -> {DestEndPoint}, Cleaned up {toRemove.Count()} packets");

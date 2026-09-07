@@ -22,7 +22,7 @@ public class NetCap
     public ObjectPool<RawPacket> RawPacketPool = ObjectPool.Create(new DefaultPooledObjectPolicy<RawPacket>());
     public ConcurrentQueue<RawPacket> RawPacketQueue = new();
     private Task PacketParseTask;
-    private byte[] DecompressionScratchBuffer = new byte[1024 * 1024];
+    private byte[] DecompressionScratchBuffer = new byte[(1024 * 1024) * 5];
     private Decompressor _decompressor = new();
     private Dictionary<NotifyId, Action<ReadOnlySpan<byte>, ExtraPacketData>> NotifyHandlers = new();
     private Dictionary<ProxyId, Action<ReadOnlySpan<byte>, uint, ExtraPacketData>> ProxyHandlers = new();
@@ -243,12 +243,18 @@ public class NetCap
         while (offset < data.Length)
         {
             var msgData = data[offset..];
-            if (data.Length < 6)
+            if (msgData.Length < 6)
             {
                 return;
             }
 
             var len = BinaryPrimitives.ReadUInt32BigEndian(msgData);
+
+            if (len < 6 || len > msgData.Length)
+            {
+                return;
+            }
+
             var rawMsgType = BinaryPrimitives.ReadInt16BigEndian(msgData[4..]);
             var isCompressed = (rawMsgType & 0x8000) != 0;
             var msgType = (MsgTypeId)(rawMsgType & 0x7FFF);
@@ -292,6 +298,11 @@ public class NetCap
 
     private void ParseFrameDown(ReadOnlySpan<byte> data, bool isCompressed, DateTime lastPacketTime)
     {
+        if (data.Length < 4)
+        {
+            return;
+        }
+
         var seqNum = BinaryPrimitives.ReadUInt32BigEndian(data);
 
         if (isCompressed)
@@ -311,6 +322,11 @@ public class NetCap
     private void ParseNotify(ReadOnlySpan<byte> data, bool isCompressed, DateTime lastPacketTime)
     {
         //byte[] debugHeaders = data.ToArray();
+
+        if (data.Length < 16)
+        {
+            return;
+        }
 
         var serviceUuid = BinaryPrimitives.ReadUInt64BigEndian(data);
         var stubId = BinaryPrimitives.ReadUInt32BigEndian(data[8..]);
@@ -355,6 +371,11 @@ public class NetCap
     private void ParseCall(ReadOnlySpan<byte> data, bool isCompressed, DateTime lastPacketTime)
     {
         //byte[] debugHeaders = data.ToArray();
+
+        if (data.Length < 16)
+        {
+            return;
+        }
 
         var proxyServiceId = BinaryPrimitives.ReadUInt64BigEndian(data);
         var subId = BinaryPrimitives.ReadUInt32BigEndian(data[8..]);
@@ -551,8 +572,16 @@ public class NetCap
         }
         catch (Exception ex)
         {
-            Log.Logger.Error(ex, "Error decompressing data of Len: {Len}, DecompressionScratchBuffer Size: {ScratchSize}", data.Length, DecompressionScratchBuffer.Length);
-            return [];
+            Log.Logger.Warning(ex, "Error decompressing data of Len: {Len}, DecompressionScratchBuffer Size: {ScratchSize}", data.Length, DecompressionScratchBuffer.Length);
+            try
+            {
+                return _decompressor.Unwrap(data);
+            }
+            catch (Exception ex2)
+            {
+                Log.Logger.Error(ex2, "Error performing fallback decompressing data of Len: {Len}", data.Length);
+                return [];
+            }
         }
     }
 
